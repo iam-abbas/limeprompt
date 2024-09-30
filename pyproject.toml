@@ -5,6 +5,14 @@ description = "Light weight prompting and parsing library for LLM models"
 authors = ["Abbas J <abbas@altair.so>"]
 license = "MIT"
 readme = "README.md"
+homepage = "https://github.com/iam-abbas/limeprompt"
+repository = "https://github.com/iam-abbas/limeprompt"
+keywords = ["llm", "prompt", "ai", "openai", "anthropic"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
 packages = [
     { include = "limeprompt" },
 ]
