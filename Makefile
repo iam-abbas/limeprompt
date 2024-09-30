@@ -22,3 +22,8 @@ check-lockfile: ## Compares lock file with pyproject.toml
 .PHONY: test
 test: ## Run the test suite
 	poetry run pytest -vv -s ./tests
+
+.PHONY: publish
+publish:
+	poetry build
+	poetry publish
