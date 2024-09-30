@@ -2,9 +2,10 @@
 
 import json
 import logging
-from typing import Any, Dict, Generic, Type, TypeVar
+from typing import Any, Dict, Generic, Optional, Type, TypeVar, Union
 
 from anthropic import Anthropic
+from openai import OpenAI
 from pydantic import BaseModel, ValidationError
 
 from .exceptions import InvalidInputError, LimepromptError
@@ -21,23 +22,27 @@ class Limeprompt(Generic[T]):
 
     def __init__(
         self,
-        model_client: Anthropic,
+        model_client: Union[Anthropic, OpenAI],
         model_name: str,
         prompt: str,
         variables: Dict[str, Any],
         output_model: Type[T],
         max_tokens: int,
+        include_chain_of_thought: bool = True,
+        log_level: Optional[int] = None,
     ):
         """
         Initialize the Limeprompt instance.
 
         Args:
-            model_client (Anthropic): The Anthropic client instance.
+            model_client (Union[Anthropic, OpenAI]): The Anthropic or OpenAI client instance.
             model_name (str): The name of the model to use.
             prompt (str): The prompt template.
             variables (Dict[str, Any]): The variables to use in the prompt.
             output_model (Type[T]): The Pydantic model for the output.
             max_tokens (int): The maximum number of tokens for the response.
+            include_chain_of_thought (bool): Whether to include chain of thought in the output.
+            log_level (Optional[int]): The logging level to use (e.g., logging.INFO, logging.WARNING).
 
         Raises:
             InvalidInputError: If any of the input parameters are invalid.
@@ -57,18 +62,24 @@ class Limeprompt(Generic[T]):
         self.variables = variables
         self.output_model = output_model
         self.max_tokens = max_tokens
+        self.include_chain_of_thought = include_chain_of_thought
+
+        if log_level is not None:
+            logger.setLevel(log_level)
 
     def _validate_inputs(
         self,
-        model_client: Anthropic,
+        model_client: Union[Anthropic, OpenAI],
         model_name: str,
         prompt: str,
         variables: Dict[str, Any],
         output_model: Type[T],
         max_tokens: int,
     ):
-        if not isinstance(model_client, Anthropic):
-            raise InvalidInputError("model_client must be an instance of Anthropic")
+        if not isinstance(model_client, (Anthropic, OpenAI)):
+            raise InvalidInputError(
+                "model_client must be an instance of Anthropic or OpenAI"
+            )
         if not isinstance(model_name, str):
             raise InvalidInputError("model_name must be a string")
         if not isinstance(prompt, str):
@@ -90,7 +101,7 @@ class Limeprompt(Generic[T]):
             max_tokens (int, optional): Override the default max_tokens value.
 
         Returns:
-            LimepromptOutput[T]: The generated output and chain of thought.
+            LimepromptOutput[T]: The generated output and chain of thought (if included).
 
         Raises:
             LimepromptError: If there's an error during the process.
@@ -100,23 +111,20 @@ class Limeprompt(Generic[T]):
                 self.prompt, self.variables, self.output_model
             )
 
-            logger.info(
-                "Sending request to Anthropic API with model: %s", self.model_name
-            )
-            message = self.model_client.messages.create(
-                max_tokens=max_tokens or self.max_tokens,
-                messages=[
-                    {
-                        "role": "user",
-                        "content": generated_prompt,
-                    }
-                ],
-                model=self.model_name,
-            )
+            logger.info("Sending request to API with model: %s", self.model_name)
 
-            output_content = message.content[0].text
+            if isinstance(self.model_client, Anthropic):
+                output_content = self._run_anthropic(generated_prompt, max_tokens)
+            elif isinstance(self.model_client, OpenAI):
+                output_content = self._run_openai(generated_prompt, max_tokens)
+            else:
+                raise LimepromptError("Unsupported model client")
 
-            chain_of_thought = extract_thinking(output_content)
+            chain_of_thought = (
+                extract_thinking(output_content)
+                if self.include_chain_of_thought
+                else None
+            )
             json_str = extract_output(output_content)
 
             data = json.loads(json_str)
@@ -136,3 +144,29 @@ class Limeprompt(Generic[T]):
         except Exception as e:
             logger.error("Unexpected error: %s", str(e))
             raise LimepromptError(f"Unexpected error occurred: {str(e)}") from e
+
+    def _run_anthropic(self, generated_prompt: str, max_tokens: int = None) -> str:
+        message = self.model_client.messages.create(
+            max_tokens=max_tokens or self.max_tokens,
+            messages=[
+                {
+                    "role": "user",
+                    "content": generated_prompt,
+                }
+            ],
+            model=self.model_name,
+        )
+        return message.content[0].text
+
+    def _run_openai(self, generated_prompt: str, max_tokens: int = None) -> str:
+        chat_completion = self.model_client.chat.completions.create(
+            model=self.model_name,
+            messages=[
+                {
+                    "role": "user",
+                    "content": generated_prompt,
+                }
+            ],
+            max_tokens=max_tokens or self.max_tokens,
+        )
+        return chat_completion.choices[0].message.content
