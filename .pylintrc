@@ -1,0 +1,7 @@
+[BASIC]
+
+additional-builtins=_
+disable=fixme,too-few-public-methods,line-too-long,too-many-positional-arguments
+extension-pkg-whitelist=pydantic
+good-names=i, j, k, q, db, ws
+max-args=10

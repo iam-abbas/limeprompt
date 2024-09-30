@@ -1,0 +1,28 @@
+[tool.poetry]
+name = "limeprompt"
+version = "0.1.0"
+description = "Light weight prompting and parsing library for LLM models"
+authors = ["Abbas J <abbas@altair.so>"]
+license = "MIT"
+readme = "README.md"
+packages = [
+    { include = "limeprompt" },
+]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+anthropic = "^0.34.2"
+pydantic = "^2.9.2"
+
+[tool.poetry.group.dev.dependencies]
+black = "^24.8.0"
+isort = "^5.13.2"
+pylint = "^3.3.1"
+pytest = "^8.3.3"
+
+[tool.isort]
+profile = "black"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
