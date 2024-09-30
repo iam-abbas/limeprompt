@@ -33,13 +33,13 @@ anthropic_client = Anthropic(api_key='your-api-key')
 lp = Limeprompt(
     model_client=anthropic_client,
     model_name='claude-3-5-sonnet-20240620',
-    prompt="Write an email to {name} about {topic}",
+    prompt="Write an email to <name> about <topic>",
     variables={"name": "Alice", "topic": "limes"},
     output_model=Email,
     max_tokens=1024
 )
 
-# Run and get your zesty results!
+# Run and get your results
 result = lp.run()
 
 print(f"Subject: {result.output.subject}")

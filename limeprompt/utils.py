@@ -27,7 +27,7 @@ def generate_prompt(
         f"<{key}>\n{value}\n</{key}>" for key, value in variables.items()
     )
 
-    output_format = json.dumps({field: "string" for field in output_model.__fields__})
+    output_format = json.dumps({field: "string" for field in output_model.model_fields})
 
     return f"""
     <rules>
