@@ -46,8 +46,6 @@ print(f"Subject: {result.output.subject}")
 print(f"Message: {result.output.message}")
 ```
 
-## Not
-
 ## Contributing
 
 You are welcome to open issues or submit PRs. Here's my todo list for the library:
