@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "limeprompt"
-version = "0.2.0"
+version = "0.2.2"
 description = "Light weight prompting and parsing library for LLM models"
 authors = ["Abbas J <abbas@altair.so>"]
 license = "MIT"

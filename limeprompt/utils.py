@@ -10,7 +10,10 @@ from .exceptions import OutputExtractionError
 
 
 def generate_prompt(
-    prompt: str, variables: Dict[str, Any], output_model: Type[BaseModel]
+    prompt: str,
+    variables: Dict[str, Any],
+    output_model: Type[BaseModel],
+    include_chain_of_thought: bool = True,
 ) -> str:
     """
     Generate the full prompt with variables and output format instructions.
@@ -19,6 +22,7 @@ def generate_prompt(
         prompt (str): The prompt template.
         variables (Dict[str, Any]): The variables to use in the prompt.
         output_model (Type[BaseModel]): The Pydantic model for the output.
+        include_chain_of_thought (bool): Whether to include chain of thought instructions.
 
     Returns:
         str: The generated prompt.
@@ -29,12 +33,23 @@ def generate_prompt(
 
     output_format = json.dumps({field: "string" for field in output_model.model_fields})
 
+    rules = [
+        "You will follow the prompt strictly",
+        "You will adhere to output format strictly",
+        "Output in provided format should be provided in <output></output> with strict json format with nothing more than pure json. No backquotes and no explanations. Always return json in provided format",
+    ]
+
+    if include_chain_of_thought:
+        rules.append(
+            "Think before you perform the action, think through the <prompt> in chain of thought manner and clearly outline your thinking process in <thinking></thinking> tag"
+        )
+
+    rules_str = "\n".join(f"- {rule}" for rule in rules)
+
     return f"""
     <rules>
-    - You will follow the prompt strictly
-    - You will adhere to output format strictly
-    - Think before you perform the action, think through the <prompt> in chain of thought manner and clearly outline your thinking process in <thinking></thinking> tag
-    - Output in provided format should be provided in <output></output> with strict json format with nothing more than pure json. No backquotes and no explanations. Always return json in provided format
+    {rules_str}
+    </rules>
 
     <prompt>
     {prompt}

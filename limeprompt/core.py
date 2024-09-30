@@ -108,7 +108,10 @@ class Limeprompt(Generic[T]):
         """
         try:
             generated_prompt = generate_prompt(
-                self.prompt, self.variables, self.output_model
+                self.prompt,
+                self.variables,
+                self.output_model,
+                include_chain_of_thought=self.include_chain_of_thought,
             )
 
             logger.info("Sending request to API with model: %s", self.model_name)

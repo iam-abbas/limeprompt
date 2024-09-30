@@ -4,6 +4,7 @@ from unittest.mock import create_autospec, Mock, patch
 from anthropic import Anthropic
 from openai import OpenAI
 from limeprompt import Limeprompt, LimepromptOutput, LimepromptError, InvalidInputError
+from limeprompt.utils import generate_prompt
 from tests._types import SampleEmail
 
 
@@ -58,7 +59,7 @@ class TestLimeprompt(unittest.TestCase):
     @patch("limeprompt.core.generate_prompt")
     @patch("limeprompt.core.extract_thinking")
     @patch("limeprompt.core.extract_output")
-    def test_run_success_anthropic(
+    def test_run_success_anthropic_with_cot(
         self, mock_extract_output, mock_extract_thinking, mock_generate_prompt
     ):
         mock_generate_prompt.return_value = "Generated prompt"
@@ -80,11 +81,10 @@ class TestLimeprompt(unittest.TestCase):
     @patch("limeprompt.core.generate_prompt")
     @patch("limeprompt.core.extract_thinking")
     @patch("limeprompt.core.extract_output")
-    def test_run_success_openai(
+    def test_run_success_openai_without_cot(
         self, mock_extract_output, mock_extract_thinking, mock_generate_prompt
     ):
         mock_generate_prompt.return_value = "Generated prompt"
-        mock_extract_thinking.return_value = "Chain of thought"
         mock_extract_output.return_value = '{"subject": "Test", "message": "Hello"}'
 
         mock_completion = Mock()
@@ -98,6 +98,7 @@ class TestLimeprompt(unittest.TestCase):
         self.assertEqual(result.output.subject, "Test")
         self.assertEqual(result.output.message, "Hello")
         self.assertIsNone(result.chain_of_thought)
+        mock_extract_thinking.assert_not_called()
 
     @patch("limeprompt.core.generate_prompt")
     def test_run_api_error_anthropic(self, mock_generate_prompt):
@@ -127,6 +128,26 @@ class TestLimeprompt(unittest.TestCase):
             log_level=logging.DEBUG,
         )
         mock_logger.setLevel.assert_called_with(logging.DEBUG)
+
+    def test_generate_prompt_with_cot(self):
+        prompt = generate_prompt(
+            prompt="Test prompt",
+            variables={"test": "value"},
+            output_model=SampleEmail,
+            include_chain_of_thought=True,
+        )
+        self.assertIn("Think before you perform the action", prompt)
+        self.assertIn("<thinking></thinking>", prompt)
+
+    def test_generate_prompt_without_cot(self):
+        prompt = generate_prompt(
+            prompt="Test prompt",
+            variables={"test": "value"},
+            output_model=SampleEmail,
+            include_chain_of_thought=False,
+        )
+        self.assertNotIn("Think before you perform the action", prompt)
+        self.assertNotIn("<thinking>", prompt)
 
 
 if __name__ == "__main__":
