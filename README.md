@@ -95,6 +95,7 @@ You are welcome to open issues or submit PRs. Here's my todo list for the librar
 - [x] Add support for OpenAI
 - [x] Add logging options
 - [x] Add ability to disable chain of thought
+- [ ] Async client support
 - [ ] Modularize the prompting techniques
 - [ ] Add support for few-shot prompting
 
